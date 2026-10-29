@@ -1,0 +1,8 @@
+## Interface: 11507
+## Title: Buff Power
+## Notes: Keep the raid buffed.
+## Author: Shiro
+## Version: 1.0.0
+
+frame.lua
+buffing.lua
