@@ -109,7 +109,38 @@ function buffPower.GetNextBuff(aoe_buffs)
     return spellId, target
 end
 
--- Returns (number of buffs needed, time until next expiry)
-function buffPower.NumBuffsNeeded()
+-- Returns tuple (number of buffs needed as first, closest expiry time)
+function buffPower.NumBuffsNeeded(startIndex, lastIndex)
+    local numPlayers = math.max(GetNumGroupMembers(), 1)
+    local _, class = UnitClass("player")
+    local buffs = buffPower.Buffs[class]
 
+    local closestExpiration
+    local needed = 0
+    for i = startIndex, lastIndex do
+        local unit
+        if IsInRaid() then
+            unit = "raid" .. i
+        elseif i == numPlayers then
+            unit = "player"
+        else
+            unit = "party" .. i
+        end
+
+        -- Loop over all buffs we provide
+        for _, buff in ipairs(buffs) do
+            local single = buffPower.HighestKnown(buff.single)
+            local group = buff.group and buffPower.HighestKnown(buff.group)
+            if single or group then
+                local expiration = buffPower.GetExpirationTime(unit, single, group)
+                if expiration == 0 then
+                    needed = needed + 1
+                elseif expiration and (not closestExpiration or expiration < closestExpiration) then
+                    closestExpiration = expiration
+                end
+            end
+        end
+    end
+
+    return needed, closestExpiration
 end
