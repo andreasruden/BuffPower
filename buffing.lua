@@ -67,6 +67,19 @@ function buffPower.GetExpirationTime(unit, singleId, groupId)
     return expiration
 end
 
+function buffPower.IsRoleMatching(unit, roles)
+    if not roles then
+        return true
+    end
+
+    local assigned = UnitGroupRolesAssigned(unit)
+    if GetPartyAssignment("MAINTANK", unit) then
+        assigned = "TANK"
+    end
+
+    return roles[assigned] == true
+end
+
 function buffPower.GetNextBuff(aoe_buffs)
     local _, class = UnitClass("player")
     local buffs = buffPower.Buffs[class]
@@ -74,6 +87,7 @@ function buffPower.GetNextBuff(aoe_buffs)
     local closestExpiration, spellId, target
 
     -- Loop over all buffs we provide
+    -- TODO: This could really be less nested, my eyes are bleeding
     for _, buff in ipairs(buffs) do
         local single = buffPower.HighestKnown(buff.single)
         local group = buff.group and buffPower.HighestKnown(buff.group)
@@ -92,15 +106,17 @@ function buffPower.GetNextBuff(aoe_buffs)
                     unit = "party" .. i
                 end
 
-                -- Mark this buff as our best candidate if its expiry is sooner
-                local expiration = buffPower.GetExpirationTime(unit, single, group)
-                if expiration and (not closestExpiration or expiration < closestExpiration) then
-                    closestExpiration = expiration
-                    target = unit
-                    if aoe_buffs and group then
-                        spellId = group
-                    else
-                        spellId = single
+                if buffPower.IsRoleMatching(unit, buff.roles) then
+                    -- Mark this buff as our best candidate if its expiry is sooner
+                    local expiration = buffPower.GetExpirationTime(unit, single, group)
+                    if expiration and (not closestExpiration or expiration < closestExpiration) then
+                        closestExpiration = expiration
+                        target = unit
+                        if aoe_buffs and group then
+                            spellId = group
+                        else
+                            spellId = single
+                        end
                     end
                 end
             end
@@ -132,7 +148,7 @@ function buffPower.NumBuffsNeeded(startIndex, lastIndex)
         for _, buff in ipairs(buffs) do
             local single = buffPower.HighestKnown(buff.single)
             local group = buff.group and buffPower.HighestKnown(buff.group)
-            if single or group then
+            if (single or group) and buffPower.IsRoleMatching(unit, buff.roles) then
                 local expiration = buffPower.GetExpirationTime(unit, single, group)
                 if expiration == 0 then
                     needed = needed + 1
