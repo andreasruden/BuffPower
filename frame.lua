@@ -1,6 +1,6 @@
 local _, buffPower = ...
 
-local f = CreateFrame("Button", "BuffPower", UIParent, "BackdropTemplate")
+local f = CreateFrame("Button", "BuffPower", UIParent, "SecureActionButtonTemplate, BackdropTemplate")
 
 -- Sizing & Styling
 f:SetSize(48, 32)
@@ -25,12 +25,26 @@ end)
 f:SetScript("OnDragStop", f.StopMovingOrSizing)
 
 -- Left Click and Right Click
-f:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-f:SetScript("OnClick", function(self, button)
-    print(button)
-    if button == "LeftButton" then
-        print(buffPower.GetNextBuff(true))
-    elseif button == "RightButton" then
-        print(buffPower.GetNextBuff(false))
+f:RegisterForClicks("AnyDown")
+f:SetScript("PreClick", function(self, button)
+    if IsShiftKeyDown() then
+        self.SetAttribute("type", nil)
+        return
     end
+
+    if InCombatLockdown() then
+        print("Cannot use the smart cast button in combat")
+        return
+    end
+
+    local spellId, unit
+    if button == "LeftButton" then
+        spellId, unit = buffPower.GetNextBuff(true)
+    elseif button == "RightButton" then
+        spellId, unit = buffPower.GetNextBuff(false)
+    end
+
+    self:SetAttribute("type", spellId and "spell" or nil)
+    self:SetAttribute("spell", spellId)
+    self:SetAttribute("unit", unit)
 end)
