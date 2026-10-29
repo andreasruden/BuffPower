@@ -77,30 +77,31 @@ function buffPower.GetNextBuff(aoe_buffs)
     for _, buff in ipairs(buffs) do
         local single = buffPower.HighestKnown(buff.single)
         local group = buff.group and buffPower.HighestKnown(buff.group)
-
-        -- Loop over every member in the party
-        local numPlayers = math.max(GetNumGroupMembers(), 1)
-        local startIndex = math.random(numPlayers)
-        for k = 0, numPlayers - 1 do
-            local i = (startIndex - 1 + k) % numPlayers + 1
-            local unit
-            if IsInRaid() then
-                unit = "raid" .. i
-            elseif i == numPlayers then
-                unit = "player"
-            else
-                unit = "party" .. i
-            end
-
-            -- Mark this buff as our best candidate if its expiry is sooner
-            local expiration = buffPower.GetExpirationTime(unit, single, group)
-            if expiration and (not closestExpiration or expiration < closestExpiration) then
-                closestExpiration = expiration
-                target = unit
-                if aoe_buffs and group then
-                    spellId = group
+        if single or group then
+            -- Loop over every member in the party
+            local numPlayers = math.max(GetNumGroupMembers(), 1)
+            local startIndex = math.random(numPlayers)
+            for k = 0, numPlayers - 1 do
+                local i = (startIndex - 1 + k) % numPlayers + 1
+                local unit
+                if IsInRaid() then
+                    unit = "raid" .. i
+                elseif i == numPlayers then
+                    unit = "player"
                 else
-                    spellId = single
+                    unit = "party" .. i
+                end
+
+                -- Mark this buff as our best candidate if its expiry is sooner
+                local expiration = buffPower.GetExpirationTime(unit, single, group)
+                if expiration and (not closestExpiration or expiration < closestExpiration) then
+                    closestExpiration = expiration
+                    target = unit
+                    if aoe_buffs and group then
+                        spellId = group
+                    else
+                        spellId = single
+                    end
                 end
             end
         end
