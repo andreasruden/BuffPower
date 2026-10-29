@@ -4,39 +4,39 @@ buffPower.Buffs =
 {
     DRUID =
     {
-        -- Mark of the Wild
         {
+            name = "Mark of the Wild",
             single = { 1126, 5232, 6756, 5234, 8907, 9884, 9885, 26990 },
             group  = { 21849, 21850, 26991 },
         },
-        -- Thorns
         {
+            name = "Thorns",
             single = { 467, 782, 1075, 8914, 9756, 9910, 26992 },
             roles  = { TANK = true },
         }
     },
     MAGE =
     {
-        -- Arcane Intellect
         {
+            name = "Arcane Intellect",
             single = { 1459, 1460, 1461, 10156, 10157, 27126 },
             group = { 23028, 27127 },
         },
     },
     PRIEST =
     {
-        -- Fortitude
         {
+            name = "Fortitude",
             single = { 1243, 1244, 1245, 2791, 10937, 10938, 25389 },
             group = { 21562, 21564, 25392 },
         },
-        -- Divine Spirit
         {
+            name = "Divine Spirit",
             single = { 14752, 14818, 14819, 27841, 25312 },
             group  = { 27681, 32999 },
         },
-        -- Shadow Protection
         {
+            name = "Shadow Protection",
             single = { 976, 10957, 10958, 25433 },
             group  = { 27683, 39374 },
         }
@@ -91,7 +91,7 @@ function buffPower.GetNextBuff(aoe_buffs)
     for _, buff in ipairs(buffs) do
         local single = buffPower.HighestKnown(buff.single)
         local group = buff.group and buffPower.HighestKnown(buff.group)
-        if single or group then
+        if (single or group) and buffPower.IsBuffEnabled(buff.name) then
             -- Loop over every member in the party
             local numPlayers = math.max(GetNumGroupMembers(), 1)
             local startIndex = math.random(numPlayers)
@@ -148,7 +148,8 @@ function buffPower.NumBuffsNeeded(startIndex, lastIndex)
         for _, buff in ipairs(buffs) do
             local single = buffPower.HighestKnown(buff.single)
             local group = buff.group and buffPower.HighestKnown(buff.group)
-            if (single or group) and buffPower.IsRoleMatching(unit, buff.roles) then
+            if (single or group) and buffPower.IsRoleMatching(unit, buff.roles) and
+                buffPower.IsBuffEnabled(buff.name) then
                 local expiration = buffPower.GetExpirationTime(unit, single, group)
                 if expiration == 0 then
                     needed = needed + 1
@@ -160,4 +161,9 @@ function buffPower.NumBuffsNeeded(startIndex, lastIndex)
     end
 
     return needed, closestExpiration
+end
+
+function buffPower.IsBuffEnabled(name)
+    local enabled = BuffPowerDB and BuffPowerDB[name]
+    return enabled == nil or enabled
 end

@@ -3,6 +3,7 @@
 ## Notes: Keep the raid buffed.
 ## Author: Shiro
 ## Version: 1.0.0
+## SavedVariables: BuffPowerDB
 
 frame.lua
 buffing.lua

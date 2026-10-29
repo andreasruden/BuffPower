@@ -91,7 +91,7 @@ f:SetScript("OnUpdate", function(self, elapsed)
             if nextExpiryTime then
                 f.text:SetText(string.format(SecondsToTimeAbbrev(nextExpiryTime - GetTime())))
             else
-                f:SetText("")
+                f.text:SetText("")
             end
         else
             f:SetBackdropColor(1, 0, 0, 0.8)
@@ -102,3 +102,27 @@ f:SetScript("OnUpdate", function(self, elapsed)
         numMissingBuffs = 0
     end
 end)
+
+-- Menu for settings
+f:SetAttribute("shift-type2", "ShowMenu")
+
+local function IsChecked(key)
+    return buffPower.IsBuffEnabled(key)
+end
+
+local function Toggle(key)
+    BuffPowerDB = BuffPowerDB or {}
+    BuffPowerDB[key] = not IsChecked(key)
+    return MenuResponse.Refresh
+end
+
+function f.ShowMenu(self)
+    local menu = MenuUtil.CreateContextMenu(self, function(_, root)
+        for _, buff in ipairs(buffPower.Buffs[class]) do
+            root:CreateCheckbox(buff.name, IsChecked, Toggle, buff.name)
+        end
+    end)
+
+    menu:ClearAllPoints()
+    menu:SetPoint("TOPLEFT", self, "TOPRIGHT", 2, 0)
+end
