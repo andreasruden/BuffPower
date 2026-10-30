@@ -1,5 +1,10 @@
 local _, buffPower = ...
 
+-- Give readable names to the binds in Bindings.xml
+BINDING_HEADER_BUFFPOWER = "Buff Power"
+_G["BINDING_NAME_CLICK BuffPower:LeftButton"] = "Use group buffs (LMB)"
+_G["BINDING_NAME_CLICK BuffPower:RightButton"] = "Singles only (RMB)"
+
 local _, class = UnitClass("player")
 if class ~= "DRUID" and class ~= "MAGE" and class ~= "PRIEST" then
     return
