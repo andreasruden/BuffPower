@@ -43,6 +43,8 @@ buffPower.Buffs =
     }
 }
 
+local FRESH_BUFF_SECS = 180
+
 function buffPower.HighestKnown(ids)
     for i = #ids, 1, -1 do
         if C_SpellBook.IsSpellInSpellBook(ids[i]) then
@@ -57,14 +59,16 @@ function buffPower.GetExpirationTime(unit, singleId, groupId)
     end
 
     local expiration = 0
+    local maxDuration
     AuraUtil.ForEachAura(unit, "HELPFUL", nil, function(aura)
         if aura.spellId == singleId or aura.spellId == groupId then
             expiration = aura.expirationTime
+            maxDuration = aura.duration
             return true
         end
     end, true)
 
-    return expiration
+    return expiration, maxDuration
 end
 
 function buffPower.IsRoleMatching(unit, roles)
@@ -80,14 +84,43 @@ function buffPower.IsRoleMatching(unit, roles)
     return roles[assigned] == true
 end
 
-function buffPower.GetNextBuff(aoe_buffs)
+local function UpdateCurrentlyBestBuff(unit, single, group, roles, selectionData)
+    if not buffPower.IsRoleMatching(unit, roles) then
+        return
+    end
+
+    local expiration, duration = buffPower.GetExpirationTime(unit, single, group)
+
+    -- Check if buff is too fresh to replace again
+    if expiration and expiration > 0 and (expiration - selectionData.now) + FRESH_BUFF_SECS > duration then
+        return
+    end
+
+    -- Select this buff if the previously best candidate will last longer
+    if expiration and (not selectionData.closestExpiration or expiration < selectionData.closestExpiration) then
+        selectionData.closestExpiration = expiration
+        selectionData.target = unit
+        if selectionData.includeAoeBuffs and group then
+            selectionData.spellId = group
+        else
+            selectionData.spellId = single
+        end
+    end
+end
+
+function buffPower.GetNextBuff(includeAoeBuffs)
     local _, class = UnitClass("player")
     local buffs = buffPower.Buffs[class]
 
-    local closestExpiration, spellId, target
+    local selectionData = {
+        includeAoeBuffs = includeAoeBuffs,
+        closestExpiration = nil,
+        spellId = nil,
+        target = nil,
+        now = GetTime(),
+    }
 
     -- Loop over all buffs we provide
-    -- TODO: This could really be less nested, my eyes are bleeding
     for _, buff in ipairs(buffs) do
         local single = buffPower.HighestKnown(buff.single)
         local group = buff.group and buffPower.HighestKnown(buff.group)
@@ -106,24 +139,12 @@ function buffPower.GetNextBuff(aoe_buffs)
                     unit = "party" .. i
                 end
 
-                if buffPower.IsRoleMatching(unit, buff.roles) then
-                    -- Mark this buff as our best candidate if its expiry is sooner
-                    local expiration = buffPower.GetExpirationTime(unit, single, group)
-                    if expiration and (not closestExpiration or expiration < closestExpiration) then
-                        closestExpiration = expiration
-                        target = unit
-                        if aoe_buffs and group then
-                            spellId = group
-                        else
-                            spellId = single
-                        end
-                    end
-                end
+                UpdateCurrentlyBestBuff(unit, single, group, buff.roles, selectionData)
             end
         end
     end
 
-    return spellId, target
+    return selectionData.spellId, selectionData.target
 end
 
 -- Returns tuple (number of buffs needed as first, closest expiry time)
