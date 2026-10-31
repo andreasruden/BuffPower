@@ -52,13 +52,16 @@ f:SetScript("OnDragStop", f.StopMovingOrSizing)
 -- Left Click and Right Click
 f:RegisterForClicks("AnyDown")
 f:SetScript("PreClick", function(self, button)
-    if IsShiftKeyDown() then
-        self:SetAttribute("type", nil)
+    if InCombatLockdown() then
+        if not IsShiftKeyDown() then
+            print("Cannot use the smart cast button in combat")
+        end
         return
     end
 
-    if InCombatLockdown() then
-        print("Cannot use the smart cast button in combat")
+    self:SetAttribute("type", nil)
+
+    if IsShiftKeyDown() then
         return
     end
 
@@ -72,6 +75,12 @@ f:SetScript("PreClick", function(self, button)
     self:SetAttribute("type", spellId and "spell" or nil)
     self:SetAttribute("spell", spellId)
     self:SetAttribute("unit", unit)
+end)
+
+f:SetScript("PostClick", function(self)
+    if not InCombatLockdown() then
+        self:SetAttribute("type", nil)
+    end
 end)
 
 -- Add the text to display number of missing buffs
