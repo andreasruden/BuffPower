@@ -163,6 +163,9 @@ function buffPower.GetNextBuff(includeAoeBuffs)
         end
     end
 
+    if selectionData.spellId then
+        print(C_Spell.GetSpellLink(selectionData.spellId) .. " -> " .. UnitName(selectionData.target))
+    end
     return selectionData.spellId, selectionData.target
 end
 
