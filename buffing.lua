@@ -59,6 +59,7 @@ buffPower.Buffs =
 }
 
 local FRESH_BUFF_SECS = 180
+local MAXIMUM_REPLACED_DURATION = 12 * 60
 
 function buffPower.HighestKnown(ids)
     for i = #ids, 1, -1 do
@@ -110,8 +111,9 @@ local function UpdateCurrentlyBestBuff(unit, single, group, roles, selectionData
 
     local expiration, duration = buffPower.GetExpirationTime(unit, single, group)
 
-    -- Check if buff is too fresh to replace again
-    if expiration and expiration > 0 and (expiration - selectionData.now) + FRESH_BUFF_SECS > duration then
+    -- Don't replace buffs that were recently cast or still have enough remaining duration
+    local maxRemaining = math.min(MAXIMUM_REPLACED_DURATION, (duration or 0) - FRESH_BUFF_SECS)
+    if expiration and expiration > 0 and (expiration - selectionData.now) > maxRemaining then
         return
     end
 
