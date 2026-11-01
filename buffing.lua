@@ -69,7 +69,7 @@ function buffPower.HighestKnown(ids)
 end
 
 function buffPower.GetExpirationTime(unit, singleId, groupId)
-    if UnitIsDeadOrGhost(unit) then
+    if UnitIsDeadOrGhost(unit) or not UnitIsConnected(unit) or not UnitIsVisible(unit) then
         return nil
     end
 
@@ -100,6 +100,10 @@ function buffPower.IsRoleMatching(unit, roles)
 end
 
 local function UpdateCurrentlyBestBuff(unit, single, group, roles, selectionData)
+    if not C_Spell.IsSpellInRange(single or group, unit) then
+        return
+    end
+
     if not buffPower.IsRoleMatching(unit, roles) then
         return
     end
